@@ -1,0 +1,2 @@
+dhcpd_flags=vether0
+pkg_scripts=miniupnpd
