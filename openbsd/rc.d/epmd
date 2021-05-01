@@ -1,0 +1,17 @@
+#!/bin/ksh
+#
+
+daemon="/usr/local/lib/otp-23/bin/epmd -daemon"
+
+. /etc/rc.d/rc.subr
+
+rc_reload=NO
+
+rc_check() {
+	pgrep -f "${daemon}" 
+}
+rc_stop() {
+    /usr/local/lib/otp-23/bin/epmd -kill
+}
+
+rc_cmd $1

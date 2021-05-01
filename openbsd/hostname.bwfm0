@@ -1,0 +1,7 @@
+inet 192.168.10.1  255.255.255.0 192.168.10.255
+-powersave
+chan 36
+mode 11n
+mediaopt hostap
+nwid David-Mobile
+wpakey 1357924680

@@ -1,0 +1,23 @@
+#!/bin/ksh
+#
+
+daemon="/usr/local/proxy/_rel/proxy/bin/proxy"
+
+. /etc/rc.d/rc.subr
+
+rc_reload=NO
+rc_usercheck=NO
+
+rc_start() {
+    /usr/local/proxy/_rel/proxy/bin/proxy start
+}
+rc_check() {
+    # return 1 is needed: rabbitmqctl returns a higher error code on failure
+    /usr/local/proxy/_rel/proxy/bin/proxy status || return 1
+}
+
+rc_stop() {
+    /usr/local/proxy/_rel/proxy/bin/proxy stop
+}
+
+rc_cmd $1

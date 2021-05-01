@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# $FreeBSD: head/lang/erlang/files/epmd.in 340872 2014-01-24 00:14:07Z mat $
+#
+# PROVIDE: proxy
+# REQUIRE: LOGIN epmd
+#
+# Add the following line to /etc/rc.conf to enable epmd:
+#
+# proxy_enable="YES"
+#
+
+proxy_enable=${proxy_enable:-"NO"}
+
+. /etc/rc.subr
+
+name=proxy
+rcvar=proxy_enable
+
+procname=/usr/local/proxy/_rel/proxy/erts-11.2/bin/run_erl
+start_cmd="/usr/local/proxy/_rel/proxy/bin/proxy start"
+stop_cmd="/usr/local/proxy/_rel/proxy/bin/proxy stop"
+
+load_rc_config ${name}
+run_rc_command "$1"
