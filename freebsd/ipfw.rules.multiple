@@ -1,0 +1,59 @@
+#!/bin/sh
+
+ipfw -f -q flush
+ipfw table all destroy
+
+ISP_FIBER="igb5"
+ISP_PPP="igb4"
+LAN="lagg0"
+
+ipfw nat 1 config if ${ISP_FIBER} deny_in reset same_ports 
+ipfw nat 2 config if ${ISP_PPP} deny_in reset same_ports
+ipfw nat 3 config ip 127.0.0.1 redirect_port udp 127.0.0.1:53 192.168.0.1:53
+
+ipfw table CHINA_ROUTERS create type addr 
+ipfw -q table CHINA_ROUTERS add 192.168.1.1/24
+
+cat /etc/chnroute.txt | while read ip; do
+  ipfw -q table CHINA_ROUTERS add $ip 
+done
+
+ipfw add 00100 check-state
+ipfw add 00100 check-state :isp_fiber
+ipfw add 00100 check-state :isp_ppp
+
+#squid
+ipfw add 00300 fwd 127.0.0.1,3128 tcp from any to any 80 recv ${LAN} in
+
+#dns
+ipfw add 00400 nat 3 udp from any to 192.168.0.1 53 via ${LAN} in
+ipfw add 00400 nat 3 udp from 127.0.0.1 53 to any via ${LAN} out
+
+
+ipfw add 00800 set 1 skipto 03000 all from any to 'table(CHINA_ROUTERS)' recv ${LAN} in
+ipfw add 00800 set 2 skipto 02000 all from any to any recv ${LAN} in
+
+
+ipfw add 01000 skipto 02000 all from any to any recv ${ISP_FIBER} in
+ipfw add 01100 skipto 03000 all from any to any recv ${ISP_PPP} in
+ipfw add 01200 skipto 05000 all from any to any
+
+
+# 2000 - 2999 : isp_fiber
+# nat
+ipfw add 02000 setfib 0 all from any to any keep-state :isp_fiber
+ipfw add 02100 nat 1 all from any to me via ${ISP_FIBER} in
+ipfw add 02200 nat 1 all from 192.168.3.0/24 to any via ${ISP_FIBER} out
+ipfw add 02999 skipto 05000 all from any to any
+
+# 3000 - 3999 : isp_ppp
+# nat
+ipfw add 03000 setfib 1 all from any to any keep-state :isp_ppp
+ipfw add 03100 nat 2 all from any to me via ${ISP_PPP} in
+ipfw add 03200 nat 2 all from 192.168.3.0/24 to any via ${ISP_PPP} out
+ipfw add 03999 skipto 05000 all from any to any
+
+ipfw add 06000 allow all from any to any via lo0
+ipfw add 06000 allow all from any to any via ${LAN}
+ipfw add 06000 allow all from me to any keep-state
+ipfw add 06100 reass all from any to any in
