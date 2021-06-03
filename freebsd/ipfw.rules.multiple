@@ -22,14 +22,21 @@ ipfw add 00100 check-state
 ipfw add 00100 check-state :isp_fiber
 ipfw add 00100 check-state :isp_ppp
 
+#ssh
+ipfw add 00200 allow tcp from any to me 22 via ${ISP_FIBER} in setup keep-state
+
 #squid
 ipfw add 00300 fwd 127.0.0.1,3128 tcp from any to any 80 recv ${LAN} in
 
 #dns
-ipfw add 00400 nat 3 udp from any to 192.168.0.1 53 via ${LAN} in
-ipfw add 00400 nat 3 udp from 127.0.0.1 53 to any via ${LAN} out
+ipfw add 00400 skipto 04000 udp from any to 192.168.0.1 53 recv ${LAN} in
+ipfw add 00400 skipto 04000 udp from 127.0.0.1 53 to any xmit ${LAN} out
 
+#ping 
+ipfw add 00500 allow icmp from any to any via ${ISP_FIBER} in 
+ipfw add 00500 allow icmp from any to any via ${ISP_FIBER} out 
 
+#multiple line
 ipfw add 00800 set 1 skipto 03000 all from any to 'table(CHINA_ROUTERS)' recv ${LAN} in
 ipfw add 00800 set 2 skipto 02000 all from any to any recv ${LAN} in
 
@@ -53,7 +60,20 @@ ipfw add 03100 nat 2 all from any to me via ${ISP_PPP} in
 ipfw add 03200 nat 2 all from 192.168.3.0/24 to any via ${ISP_PPP} out
 ipfw add 03999 skipto 05000 all from any to any
 
-ipfw add 06000 allow all from any to any via lo0
-ipfw add 06000 allow all from any to any via ${LAN}
-ipfw add 06000 allow all from me to any keep-state
-ipfw add 06100 reass all from any to any in
+# 4000 - 4999 dns proxy
+#dns
+ipfw add 04000 nat 3 udp from any to any via ${LAN}
+
+
+# 默认规则
+ipfw add 60000 allow all from any to any via lo0
+ipfw add 60010 allow all from any to any via ${LAN}
+ipfw add 60020 allow all from me to any keep-state
+
+
+ipfw add 61010 deny ip from any to 127.0.0.0/8
+ipfw add 61020 deny ip from 127.0.0.0/8 to any
+ipfw add 61030 deny ip from any to ::1
+ipfw add 61040 deny ip from ::1 to any
+
+ipfw add 62000 reass all from any to any in
